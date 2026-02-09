@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASB Cargo Layout Plan</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { text-align: center; margin-bottom: 20px; }
+.header-form { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.form-container { display: grid; grid-template-columns: repeat(4, auto); gap: 10px; justify-content: center; margin-bottom: 10px; }
+.form-row2 { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+input, select, button { padding: 5px; font-size: 14px; }
+#layout-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center the deck */
+    margin-top: 10px;
+}
+#grid-labels-top, #grid-labels-left { font-size: 12px; margin-bottom: 5px; }
+#layout-area {
+    position: relative;
+    border: 1px solid #ccc;
+    background: repeating-linear-gradient(to right, #eee, #eee 50px, #fff 50px, #fff 100px),
+                repeating-linear-gradient(to bottom, #eee, #eee 50px, #fff 50px, #fff 100px);
+    min-height: 200px;
+}
+.cargo-item { position: absolute; border: 2px solid #333; cursor: move; transform-origin: center center; transition: transform 0.3s ease; color: #fff; font-size: 14px; text-align: center; will-change: transform; }
+.cargo-controls { opacity: 0; transition: opacity 0.3s ease; }
+.cargo-item:hover .cargo-controls { opacity: 1; }
+.rotate-btn, .reset-btn, .delete-btn { display: block; margin: 5px auto; background: #007bff; color: white; border: none; padding: 3px 6px; cursor: pointer; font-size: 12px; }
+.reset-btn { background: #6c757d; }
+.delete-btn { background: #dc3545; }
+.cargo-item[data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; top: -70px; left: 0; background: rgba(0,0,0,0.75); color: #fff; padding: 5px; font-size: 12px; white-space: pre-line; border-radius: 4px; z-index: 10; }
+</style>
+</head>
+<body>
+<h1>ASB CARGO LAYOUT PLAN</h1>
+
+<!-- Header Form -->
+<div class="header-form">
+  <label>Dari / From
+    <select id="fromSelect">
+      <option>ASB</option><option>MIRI</option><option>JRN</option><option>B15</option><option>JRN & B15</option>
+    </select>
+  </label>
+  <label>Ke / To
+    <select id="toSelect">
+      <option>JRN & B15</option><option>JRN</option><option>B15</option><option>MIRI</option><option>ASB</option>
+    </select>
+  </label>
+  <label>Jenis Kapal
+    <select id="shipSelect">
+      <option value="48x25">Vanessa 10 (48m x 25m)</option>
+      <option value="45x25">Duyong 3 (45m x 25m)</option>
+      <option value="40x25">Tegas Utama (40m x 25m)</option>
+    </select>
+  </label>
+  <label>Unit
+    <select name="unit" id="unitSelect"><option>Meter</option><option>Feet</option></select>
+  </label>
+</div>
+
+<!-- Cargo Input -->
+<div class="form-container">
+  <label>Nama Cargo <input type="text" name="namaCargo" placeholder="Nama Cargo"></label>
+  <label>Panjang <input type="number" name="panjang" placeholder="Panjang"></label>
+  <label>Lebar <input type="number" name="lebar" placeholder="Lebar"></label>
+  <label>Berat (tons) <input type="number" name="berat" placeholder="Berat"></label>
+</div>
+
+<div class="form-row2">
+  <input type="text" name="remarks" placeholder="Remarks">
+  <button type="button" id="addCargoBtn">Tambah Cargo</button>
+  <button type="button" id="submitBtn">Submit</button>
+  <button type="button" id="resetBtn">Reset Layout</button>
+</div>
+
+<!-- Layout Area -->
+<div id="layout-wrapper">
+  <div>
+    <div id="grid-labels-top"></div>
+    <div style="position: relative;">
+      <div id="grid-labels-left" style="position:absolute;left:-50px;top:0;"></div>
+      <div id="layout-area"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let scale = 16; // Maintain fixed pixel scale
+let shipLength = 48, shipWidth = 25, selectedCargo = null, unit = 'Meter';
+
+// Update grid labels and deck size
+function updateGrid(length, width) {
+    const layoutArea = document.getElementById('layout-area');
+    layoutArea.style.width = (length * scale) + 'px';
+    layoutArea.style.height = (width * scale) + 'px';
+
+    const topLabels = document.getElementById('grid-labels-top');
+    topLabels.innerHTML = '';
+    for (let i = 0; i <= length; i += 5) {
+        const span = document.createElement('span');
+        span.textContent = i + (unit === 'Feet' ? 'ft' : 'm');
+        span.style.marginRight = (scale * 5 - 10) + 'px';
+        topLabels.appendChild(span);
+    }
+
+    const leftLabels = document.getElementById('grid-labels-left');
+    leftLabels.innerHTML = '';
+    for (let i = 0; i <= width; i += 5) {
+        const span = document.createElement('span');
+        span.textContent = i + (unit === 'Feet' ? 'ft' : 'm');
+        span.style.display = 'block';
+        span.style.marginBottom = (scale * 5 - 10) + 'px';
+        leftLabels.appendChild(span);
+    }
+}
+
+// Apply scale (keep pixel size same)
+function applyScale() {
+    updateGrid(shipLength, shipWidth);
+}
+
+// Event listeners
+document.getElementById('shipSelect').onchange = function() {
+    [shipLength, shipWidth] = this.value.split('x').map(Number);
+    applyScale();
+};
+document.getElementById('unitSelect').onchange = function() {
+    unit = this.value;
+    applyScale();
+};
+
+// Initial render
+document.addEventListener('DOMContentLoaded', applyScale);
+
+// Utility functions
+function getRandomColor() { return '#' + Math.floor(Math.random()*16777215).toString(16); }
+
+function ensureInsideLayout(cargo) {
+    const containerRect = document.getElementById('layout-area').getBoundingClientRect();
+    const cargoRect = cargo.getBoundingClientRect();
+    let newLeft = parseInt(cargo.style.left);
+    let newTop = parseInt(cargo.style.top);
+    if (cargoRect.right > containerRect.right) newLeft -= (cargoRect.right - containerRect.right);
+    if (cargoRect.bottom > containerRect.bottom) newTop -= (cargoRect.bottom - containerRect.bottom);
+    if (cargoRect.left < containerRect.left) newLeft += (containerRect.left - cargoRect.left);
+    if (cargoRect.top < containerRect.top) newTop += (containerRect.top - cargoRect.top);
+    cargo.style.left = Math.max(0, newLeft) + 'px';
+    cargo.style.top = Math.max(0, newTop) + 'px';
+}
+
+// Add cargo
+function addCargo(name, length, width, weight, remarks) {
+    const cargo = document.createElement('div');
+    cargo.className = 'cargo-item';
+    cargo.style.backgroundColor = getRandomColor();
+    cargo.style.top = '10px'; cargo.style.left = '10px';
+    cargo.style.width = (length * scale) + 'px';
+    cargo.style.height = (width * scale) + 'px';
+    const lengthFeet = (length * 3.28084).toFixed(1);
+    const widthFeet = (width * 3.28084).toFixed(1);
+    cargo.dataset.tooltip = `Name: ${name}\nLength: ${length}m (${lengthFeet}ft)\nWidth: ${width}m (${widthFeet}ft)\nWeight: ${weight} tons\nRemarks: ${remarks}`;
+    cargo.innerHTML = `<strong>${name}</strong><br>${length}m x ${width}m<div class='cargo-controls'><button class='rotate-btn'>Rotate</button><button class='reset-btn'>Reset</button><button class='delete-btn'>Delete</button></div>`;
+    document.getElementById('layout-area').appendChild(cargo);
+
+    cargo.onclick = () => { document.querySelectorAll('.cargo-item').forEach(i => i.style.borderColor='#333'); cargo.style.borderColor='red'; selectedCargo=cargo; };
+
+    cargo.onmousedown = function(e) {
+        e.preventDefault();
+        let startX = e.clientX, startY = e.clientY;
+        let initialLeft = parseInt(cargo.style.left), initialTop = parseInt(cargo.style.top);
+        function onMouseMove(e) {
+            cargo.style.left = (initialLeft + e.clientX - startX) + 'px';
+            cargo.style.top = (initialTop + e.clientY - startY) + 'px';
+        }
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            cargo.style.left = Math.round(parseInt(cargo.style.left)/scale)*scale+'px';
+            cargo.style.top = Math.round(parseInt(cargo.style.top)/scale)*scale+'px';
+            ensureInsideLayout(cargo);
+            saveLayout();
+        });
+    };
+
+    cargo.ondragstart = () => false;
+    let rotation = 0;
+    cargo.querySelector('.rotate-btn').onclick = () => { rotation=(rotation+90)%360; cargo.style.transform=`rotate(${rotation}deg)`; ensureInsideLayout(cargo); saveLayout(); };
+    cargo.querySelector('.reset-btn').onclick = () => { rotation=0; cargo.style.transform='rotate(0deg)'; ensureInsideLayout(cargo); saveLayout(); };
+    cargo.querySelector('.delete-btn').onclick = () => { if(confirm('Delete cargo?')){ cargo.remove(); if(selectedCargo===cargo)selectedCargo=null; saveLayout(); } };
+
+    saveLayout();
+}
+
+// Add cargo button
+document.getElementById('addCargoBtn').onclick = () => {
+    const name=document.querySelector('input[name="namaCargo"]').value;
+    const length=parseFloat(document.querySelector('input[name="panjang"]').value);
+    const width=parseFloat(document.querySelector('input[name="lebar"]').value);
+    const weight=document.querySelector('input[name="berat"]').value;
+    const remarks=document.querySelector('input[name="remarks"]').value;
+    if(!name||!length||!width){alert('Isi Nama Cargo, Panjang & Lebar');return;}
+    addCargo(name,length,width,weight,remarks);
+};
+
+// Submit button
+document.getElementById('submitBtn').onclick = () => {
+    const blob=new Blob(['Layout submitted successfully!'],{type:'text/plain'});
+    const link=document.createElement('a'); link.href=URL.createObjectURL(blob); link.download='layout.zip'; link.click();
+};
+
+// Reset button
+document.getElementById('resetBtn').onclick = () => { document.getElementById('layout-area').innerHTML=''; selectedCargo=null; localStorage.removeItem('cargoLayout'); };
+
+// Save & Load layout
+function saveLayout(){
+    const cargos=[]; document.querySelectorAll('.cargo-item').forEach(c=>{ cargos.push({html:c.outerHTML,left:c.style.left,top:c.style.top,transform:c.style.transform}); });
+    localStorage.setItem('cargoLayout',JSON.stringify(cargos));
+}
+
+function loadLayout(){
+    const saved=localStorage.getItem('cargoLayout'); if(saved){ JSON.parse(saved).forEach(c=>{ const temp=document.createElement('div'); temp.innerHTML=c.html; const cargo=temp.firstChild; cargo.style.left=c.left; cargo.style.top=c.top; cargo.style.transform=c.transform; document.getElementById('layout-area').appendChild(cargo);
+        cargo.onclick=()=>{document.querySelectorAll('.cargo-item').forEach(i=>i.style.borderColor='#333'); cargo.style.borderColor='red'; selectedCargo=cargo;};
+        cargo.onmousedown=function(e){e.preventDefault();let startX=e.clientX,startY=e.clientY;let initialLeft=parseInt(cargo.style.left),initialTop=parseInt(cargo.style.top);function onMouseMove(e){cargo.style.left=(initialLeft+e.clientX-startX)+'px';cargo.style.top=(initialTop+e.clientY-startY)+'px';}document.addEventListener('mousemove',onMouseMove);document.addEventListener('mouseup',function onMouseUp(){document.removeEventListener('mousemove',onMouseMove);document.removeEventListener('mouseup',onMouseUp);cargo.style.left=Math.round(parseInt(cargo.style.left)/scale)*scale+'px';cargo.style.top=Math.round(parseInt(cargo.style.top)/scale)*scale+'px';ensureInsideLayout(cargo);saveLayout();});};
+        cargo.ondragstart=()=>false; let rotation=0;
+        cargo.querySelector('.rotate-btn').onclick=()=>{rotation=(rotation+90)%360;cargo.style.transform=`rotate(${rotation}deg)`;ensureInsideLayout(cargo);saveLayout();};
+        cargo.querySelector('.reset-btn').onclick=()=>{rotation=0;cargo.style.transform='rotate(0deg)';ensureInsideLayout(cargo);saveLayout();};
+        cargo.querySelector('.delete-btn').onclick=()=>{if(confirm('Delete cargo?')){cargo.remove();if(selectedCargo===cargo)selectedCargo=null;saveLayout();};};
+    });}
+}
+loadLayout();
+</script>
+</body>
+</html>
